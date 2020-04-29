@@ -6,6 +6,8 @@ import 'package:gallery_saver/files.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
+import 'package:flutter/material.dart';
+import 'dart:typed_data';
 
 class GallerySaver {
   static const String channelName = 'gallery_saver';
@@ -49,7 +51,12 @@ class GallerySaver {
 //    if (!isImage(path)) {
 //      throw ArgumentError(fileIsNotImage);
 //    }
-    if (!isLocalFilePath(path)) {
+    if (isBase64Image(path) ) {
+      var bytes = convertBase64ImageToBytes(path);
+      var name = "base64-image.png";
+      tempFile = await _saveFile(name, bytes);
+      path = tempFile.path;
+    } else if (!isLocalFilePath(path)) {
       tempFile = await _downloadFile(path, true);
       path = tempFile.path;
     }
@@ -74,16 +81,20 @@ class GallerySaver {
       if (isImage(url)) {
         name =  basename(url);
       } else {
-        name = '${new DateTime.now().millisecondsSinceEpoch}.jpg';
+        name = 'image.jpg';
       }
     } else {
       if (isVideo(url)) {
         name =  basename(url);
       } else {
-        name = '${new DateTime.now().millisecondsSinceEpoch}.mp4';
+        name = 'video.mp4';
       }
     }
+    var file = await _saveFile(name, bytes);
+    return file;
+  }
 
+  static Future<File> _saveFile(String name, Uint8List bytes) async {
     String dir = (await getTemporaryDirectory()).path;
     File file = new File('$dir/${name}');
     await file.writeAsBytes(bytes);
